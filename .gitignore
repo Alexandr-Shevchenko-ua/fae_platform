@@ -5,3 +5,8 @@ src/requirements_crew.egg-info/requires.txt
 src/requirements_crew.egg-info/SOURCES.txt
 src/requirements_crew.egg-info/top_level.txt
 .env
+src/requirements_crew/__pycache__/__init__.cpython-310.pyc
+src/requirements_crew/__pycache__/agents.cpython-310.pyc
+src/requirements_crew/__pycache__/models.cpython-310.pyc
+src/requirements_crew/__pycache__/orchestrator.cpython-310.pyc
+src/requirements_crew/__pycache__/tasks.cpython-310.pyc
