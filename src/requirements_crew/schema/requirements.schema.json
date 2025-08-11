@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RequirementsModel",
+  "type": "object",
+  "required": [
+    "meta",
+    "functional_requirements"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object"
+    },
+    "context": {
+      "type": "object"
+    },
+    "functional_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

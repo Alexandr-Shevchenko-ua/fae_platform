@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "requirements-crew"
+version = "0.1.0"
+description = "Multi-Agent Requirements Writer Crew (Stage-1 SDLC)"
+requires-python = ">=3.9"
+dependencies = [
+  "crewai>=0.130.0",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.2",
+  "langsmith>=0.1.95",
+  "python-dotenv>=1.0",
+  "rich>=13.7",
+]
+[project.optional-dependencies]
+dev = ["pytest>=8.2", "ruff>=0.5.0", "black>=24.3.0", "mypy>=1.10"]

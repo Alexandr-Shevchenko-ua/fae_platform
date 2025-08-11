@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Policy",
+  "type": "object",
+  "required": [
+    "id_prefix",
+    "style_rules",
+    "banned_phrases",
+    "acceptance_test_format",
+    "wording_tone"
+  ],
+  "properties": {
+    "id_prefix": {
+      "type": "string"
+    },
+    "style_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "banned_phrases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "acceptance_test_format": {
+      "type": "string"
+    },
+    "wording_tone": {
+      "type": "string"
+    }
+  }
+}
