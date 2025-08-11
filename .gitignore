@@ -1,1 +1,7 @@
 .env.example
+src/requirements_crew.egg-info/dependency_links.txt
+src/requirements_crew.egg-info/PKG-INFO
+src/requirements_crew.egg-info/requires.txt
+src/requirements_crew.egg-info/SOURCES.txt
+src/requirements_crew.egg-info/top_level.txt
+.env
