@@ -3,14 +3,20 @@ from crewai import Task
 from textwrap import dedent
 from .models import PolicyClarifications, DraftOutput, ValidationResult
 
+
 def build_policy_task(agent, spec: str) -> Task:
+    """Create a task that elicits a PolicyClarifications.
+
+    The Policy model uses ``wording_tone`` as the field name, so this wording must be
+    preserved in the generated policy description.
+    """
     return Task(
         description=dedent(f"""
             You receive the following raw spec:
             ---
             {spec}
             ---
-            1) Derive a house policy (tone, style rules, banned phrases, acceptance test format, ID prefix).
+            1) Derive a house policy (wording_tone, style rules, banned phrases, acceptance test format, ID prefix).
             2) List top uncertainties as clarification questions; propose an answer and confidence for each.
             Output MUST be a valid PolicyClarifications (JSON only).
         """).strip(),
