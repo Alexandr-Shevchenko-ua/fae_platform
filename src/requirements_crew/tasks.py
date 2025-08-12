@@ -40,8 +40,13 @@ def build_validate_task(agent) -> Task:
         description=dedent(f"""
             Validate the provided requirements against the policy.
             Severity: low|medium|high. WARN-ONLY: never block.
-            Provide minimal safe repairs for low-severity issues.
-            Output MUST be a valid ValidationResult JSON.
+
+            IMPORTANT OUTPUT RULES:
+            - Only include "repaired_requirements" if you can return a COMPLETE RequirementsModel,
+              including a non-empty "functional_requirements" array AND a "meta" object.
+            - If you cannot produce a COMPLETE repair, set "repaired_requirements": null.
+            - Never emit partial or placeholder objects for "repaired_requirements".
+            - Output MUST be valid JSON for ValidationResult. No commentary outside JSON.
         """).strip(),
         expected_output="JSON only ValidationResult with findings and optional repaired_requirements.",
         agent=agent,

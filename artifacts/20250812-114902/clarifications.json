@@ -1,0 +1,62 @@
+[
+  {
+    "question": "Are the five Style Packs (cinematic, analog film, anime, product, portrait) fixed or should the system support arbitrary/extendable packs?",
+    "proposed_answer": "Treat the five packs as the default required set and design the system to allow additional user-defined packs. Default pack definitions must be shipped and validated; user packs should follow the same schema and be editable.",
+    "confidence": 0.8
+  },
+  {
+    "question": "What exact fields and syntax are expected in the exported platform strings for A1111, SDXL and ComfyUI?",
+    "proposed_answer": "Export three strings per variant: (1) A1111: plain prompt and negative prompt, plus a parameter suffix or key-value (e.g., 'Steps=XX, Sampler=YYY, CFG=Z.Z'); (2) SDXL: prompt/negative split plus recommended model-specific tokens and a parameter map in a single-line comment or JSON-like suffix; (3) ComfyUI: a minimal node-ready JSON snippet or a parameterized prompt string referencing nodes. If stricter formats are required, accept a follow-up spec but provide these commonly-accepted forms by default.",
+    "confidence": 0.6
+  },
+  {
+    "question": "How granular should pack toggles be — only per-pack on/off, or per-subcomponent (lighting, lens, color-grading, etc.)?",
+    "proposed_answer": "Implement pack-level toggles as mandatory. Optionally support subcomponent toggles if provided in pack metadata, but initial delivery must work fully with pack-level toggles only.",
+    "confidence": 0.7
+  },
+  {
+    "question": "What distinguishes Safe, Bold and Experimental variants concretely?",
+    "proposed_answer": "Safe: conservative vocabulary, no potentially disallowed content, sanitized descriptors and restrained stylistic flourishes. Bold: stronger, more intense descriptive language, creative adjectives and less restrictive negative prompts. Experimental: includes creative/novel tokens, model-specific hacks and stylistic exaggerations that may require expert tuning; still must not produce disallowed content. Document the differences in a short sentence with each output.",
+    "confidence": 0.85
+  },
+  {
+    "question": "Are there limits for base/negative prompt length (characters or tokens)?",
+    "proposed_answer": "Recommend practical limits: base_prompt target ≤ 300 tokens (approx 2000 characters) and negative_prompt target ≤ 100 tokens. Validate warnings if exceeded; do not hard-block longer prompts but mark them as 'long' in metadata.",
+    "confidence": 0.45
+  },
+  {
+    "question": "Should CFG/guidance and steps be provided as single recommended values or ranges?",
+    "proposed_answer": "Provide both: a recommended range plus a preferred default value. Example: 'CFG_range': [4,12], 'cfg_default': 7.5. This gives users flexibility and makes acceptance testing deterministic.",
+    "confidence": 0.95
+  },
+  {
+    "question": "Which samplers should be suggested and should sampler recommendations be model-specific?",
+    "proposed_answer": "Recommend a short ordered list of common samplers (e.g., Euler a, Euler, DPM++ 2M Karras, DPM++ SDE Karras, DPMSolver, UniPC, K-LMS) and mark which are known to work best per engine (A1111 vs SDXL). Allow mapping table for model-specific overrides.",
+    "confidence": 0.7
+  },
+  {
+    "question": "What must acceptance tests check to count as passing?",
+    "proposed_answer": "Each test must assert: id format correct, base and negative prompts returned, enabled packs contributed expected tokens, merged prompt deduplication performed, variant's CFG/steps/sampler recommendations are present and within ranges, export strings include prompt and parameter annotations, and a safety scan that flags disallowed content for Safe variant and ensures no disallowed content for any variant. Each assertion must be machine-checkable.",
+    "confidence": 0.95
+  },
+  {
+    "question": "How should the system handle merging negative prompts from multiple enabled packs?",
+    "proposed_answer": "Merge negatives deterministically: start with base negative_prompt, append unique tokens from enabled packs in alphabetical pack order, deduplicate semantically identical tokens (exact-string deduplication required), and allow an optional conflict-resolution policy (base precedence or pack precedence). Document the chosen policy in outputs.",
+    "confidence": 0.8
+  },
+  {
+    "question": "What ID format exactly should tests and artifacts use with the provided id_prefix?",
+    "proposed_answer": "Use format '<id_prefix>-NNNN' where NNNN is a zero-padded sequence (e.g., SPB-0001). This must be used for acceptance tests and example outputs.",
+    "confidence": 0.9
+  },
+  {
+    "question": "Is image metadata (camera, EXIF, detected scene tags) required as input or out-of-scope?",
+    "proposed_answer": "Accept image metadata if available (filename, hash, EXIF) and include it in the input object for context. Automatic scene/feature extraction is optional and can be a later extension — not required for the MVP.",
+    "confidence": 0.5
+  },
+  {
+    "question": "May the Experimental variant include tokens known to be 'prompt-hack' or model-exploit primitives?",
+    "proposed_answer": "Experimental may include advanced or 'hack'-style tokens for creative exploration, but they must be clearly labeled as experimental and accompanied by warnings about potential instability. Under no circumstances should they be suggested to bypass content-safety restrictions.",
+    "confidence": 0.92
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "id_prefix": "SPB",
+  "style_rules": [
+    "Be concise, professional and actionable — prefer short example prompts and concrete parameter ranges.",
+    "Always output a clearly separated base prompt and negative prompt. Use labelled fields: \"base_prompt\" and \"negative_prompt\".",
+    "Provide Style Packs as modular additions that can be toggled on/off. Each pack must include a short description and the tokens/phrases it adds.",
+    "For each generated variant (Safe, Bold, Experimental) include recommended CFG (guidance) range, steps range, and an ordered list of suggested samplers. Also provide a default value inside the range.",
+    "Export platform-ready strings for A1111, SDXL and ComfyUI. For each export include the exact prompt text and the platform-specific parameter annotations or wrapper expected by common tooling.",
+    "When merging multiple packs, perform deterministic concatenation with duplicate-term deduplication and clear precedence rules (base prompt tokens first, then enabled packs in a consistent order).",
+    "Always include a short rationale (1–2 sentences) for why certain tokens or parameter ranges were chosen when non-obvious.",
+    "Explicitly mark model- or sampler-sensitive tokens (e.g., SDXL-only tokens) and avoid presenting them as universally applicable.",
+    "Enforce safety-by-default: Safe variant must remove or neutralize sexual, violent, illegal, or otherwise disallowed content. Experimental can be more permissive in style but must still not produce disallowed content.",
+    "Use the established ID prefix for test cases and outputs. Follow the acceptance test format exactly for all deliverables."
+  ],
+  "banned_phrases": [
+    "I can't help with",
+    "I won't",
+    "I'm sorry",
+    "guarantee",
+    "100% photorealistic",
+    "always",
+    "never",
+    "best",
+    "NSFW",
+    "porn",
+    "illegal",
+    "explicit"
+  ],
+  "acceptance_test_format": "Each acceptance test must be a JSON object with these fields: id (string, format: <id_prefix>-NNNN), scenario (short description), input {image_id|string/hash, selected_packs: [names], pack_toggles: {pack_name:bool}, variant: one of [Safe,Bold,Experimental]}, expected {base_prompt:string, negative_prompt:string, packs: {pack_name: {enabled:bool, added_tokens:string}}, cfg_range: [min,max], cfg_default: number, steps_range: [min,max], steps_default: number, samplers: [ordered list], exports: {A1111:string, SDXL:string, ComfyUI:string}}, pass_criteria: [list of assertions]. Each assertion must be machine-checkable (substring present/absent, numeric ranges satisfied, toggles respected, safety checks passed). Example assertion: \"base_prompt contains 'cinematic'\", \"A1111 string includes 'CFG=7.5' or value within recommended range\", \"negative_prompt excludes sexual terms\".",
+  "wording_tone": "Professional, concise, model-aware, non-judgmental, and safety-conscious. Use active voice and prefer concrete guidance over vague suggestions."
+}

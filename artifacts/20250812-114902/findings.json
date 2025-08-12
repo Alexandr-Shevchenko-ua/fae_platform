@@ -1,0 +1,299 @@
+{
+  "findings": [
+    {
+      "severity": "high",
+      "message": "Duplicate and inconsistent ID usage: 'SPB-0006' was used both as a requirement ID and as an acceptance-test ID in the original draft. Several acceptance_test IDs overlap with requirement IDs.",
+      "location": "requirements.functional_requirements (IDs and acceptance_tests.id)",
+      "suggestion": "Use separate ID namespaces: requirement IDs SPB-0001.. and acceptance-test IDs SPB-1001.. to guarantee uniqueness."
+    },
+    {
+      "severity": "high",
+      "message": "Contradiction in pack merge order (SPB-0004): examples and pass criteria previously conflicted with the stated deterministic order.",
+      "location": "requirements.functional_requirements -> SPB-0004",
+      "suggestion": "Enforce a single merge order: base_prompt first, then default packs in fixed order [cinematic, analog film, anime, product, portrait], then user packs in registration order. Update examples and tests to match."
+    },
+    {
+      "severity": "medium",
+      "message": "Subjective and unverifiable language (e.g., 'high-quality', 'short descriptor') reduces testability.",
+      "location": "requirements (multiple sections)",
+      "suggestion": "Replace subjective terms with measurable criteria: non-empty fields, descriptor length <= 25 words, explicit validation checks, and machine-checkable acceptance tests."
+    },
+    {
+      "severity": "medium",
+      "message": "Passive voice and weak modal verbs (e.g., 'should') appear in assumptions and some FRs making responsibilities unclear.",
+      "location": "requirements.context.assumptions and several FR statements",
+      "suggestion": "Use active voice and normative keywords (MUST/SHOULD/MAY). Example: 'The system SHALL ship default pack definitions and VALIDATE them via schema and safety checks.'"
+    },
+    {
+      "severity": "medium",
+      "message": "Missing machine-checkable acceptance tests for NFRs (performance, security, reliability).",
+      "location": "requirements.context.non_functional and several FRs",
+      "suggestion": "Add tests with measurable assertions, e.g., 'prompt_generation_time_ms <= 2000', 'metadata.removed_tokens contains sanitized tokens', 'determinism test: identical inputs produce identical outputs'."
+    },
+    {
+      "severity": "low",
+      "message": "Ambiguous pass_criteria use human-language checks rather than exact machine-checkable substrings.",
+      "location": "Multiple acceptance tests across FRs",
+      "suggestion": "Standardize pass_criteria to exact substring matches, numeric ranges, and boolean metadata flags. Adopt explicit model-sensitive marker (e.g., '[SDXL_ONLY]')."
+    },
+    {
+      "severity": "low",
+      "message": "Negative merge policy language is inconsistent across FRs for negative prompts.",
+      "location": "requirements.functional_requirements -> SPB-0008 and related FRs",
+      "suggestion": "Consolidate negative merge policy: 'base negative first, then enabled packs alphabetically, exact-string deduplication' and include an acceptance test to verify ordering and deduplication."
+    },
+    {
+      "severity": "low",
+      "message": "Some acceptance tests included informal placeholders like '(very long concatenated prompt)' or '...'; these are not machine-checkable.",
+      "location": "SPB-0009 and SPB-0010 acceptance tests",
+      "suggestion": "Replace placeholders with measurable checks (e.g., base_prompt length > 2000 characters sets metadata.long_prompt == true) and explicit metadata/warning assertions."
+    }
+  ],
+  "repaired_requirements": {
+    "meta": {
+      "id_prefix": "SPB",
+      "version": "1.0.1",
+      "title": "Smart Prompt Booster (SPB) Requirements (repaired)",
+      "author": "Requirements Drafter (audited)",
+      "date": "2025-08-12"
+    },
+    "context": {
+      "business_goal": "Provide a deterministic tool that converts a user-selected image into a labeled base_prompt plus modular Style Packs, enforces safety-by-default, and exports platform-ready strings for A1111, SDXL and ComfyUI.",
+      "stakeholders": [
+        "Product Manager",
+        "Prompt Engineers",
+        "Frontend Engineers",
+        "Backend Engineers",
+        "QA Engineers",
+        "Safety/Policy Team",
+        "End Users"
+      ],
+      "assumptions": [
+        "The system SHALL provide five default Style Packs: cinematic, analog film, anime, product, portrait.",
+        "User-defined packs SHALL follow the pack schema and SHALL be validated on registration.",
+        "Image metadata MAY be provided as input; automated scene extraction is out-of-scope for MVP.",
+        "Pack-level toggles (on/off) SHALL be supported. Subcomponent toggles MAY be deferred to later releases.",
+        "Acceptance tests SHALL use acceptance-test IDs in the SPB-1001.. range separate from requirement IDs."
+      ],
+      "out_of_scope": [
+        "Automatic scene/feature extraction (MVP)",
+        "Automatic retraining or model parameter tuning",
+        "On-device generation; system only produces prompt outputs and parameter suggestions."
+      ],
+      "non_functional": {
+        "performance": "Prompt generation latency SHALL be <= 2000 ms for a typical image with a single pack on a mid-tier server (automated test: prompt_generation_time_ms <= 2000).",
+        "security": "User-supplied packs and image metadata SHALL be sanitized; system MUST prevent arbitrary code execution and MUST log sanitizations to metadata.removed_tokens.",
+        "reliability": "Merging and exports SHALL be deterministic; regression tests SHALL assert identical_inputs_produce_identical_outputs == true.",
+        "usability": "UI SHALL present clearly labeled 'base_prompt' and 'negative_prompt' fields, visible pack toggles, and one-click exports.",
+        "compliance": "Safe variant SHALL enforce safety-by-default; model-sensitive tokens SHALL be explicitly marked (recommended marker '[SDXL_ONLY]')."
+      }
+    },
+    "functional_requirements": [
+      {
+        "id": "SPB-0001",
+        "statement": "Ingest a user-selected image and optional metadata and return a canonical input record containing image_id (required), optional filename, optional hash, and optional EXIF fields.",
+        "rationale": "Standardize inputs for downstream traceability.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1001",
+            "given": "Image input with metadata: image_id=img_123abc, filename=sunset.jpg, hash=abcd1234, EXIF.camera=Canon EOS",
+            "when": "System ingests the provided image input",
+            "then": "Expected canonical record stored. Pass criteria: canonical_record.image_id == 'img_123abc'; canonical_record.metadata.filename == 'sunset.jpg'; canonical_record.metadata.hash == 'abcd1234'; canonical_record.metadata.EXIF.camera == 'Canon EOS'"
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": []
+      },
+      {
+        "id": "SPB-0002",
+        "statement": "Generate labeled 'base_prompt' and 'negative_prompt' fields for the provided image and enabled packs. The output fields MUST be exactly named 'base_prompt' and 'negative_prompt'.",
+        "rationale": "Consistent field names required by downstream tools.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1002",
+            "given": "Image image_id=img_123abc with selected_packs=['cinematic'] and variant='Bold'",
+            "when": "System generates prompts for the image with cinematic pack enabled",
+            "then": "Expected base_prompt and negative_prompt strings returned and packs.cinematic.enabled == true. Pass criteria (machine-checkable): base_prompt contains substring 'golden-hour cinematic'; negative_prompt contains substring 'watermark'; A1111 export contains '--cfg' and '--steps' with numeric values within declared ranges; SDXL export contains 'PROMPT:' and 'NEG:'; ComfyUI export contains '\"prompt\"' and '\"negative\"' keys."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0001"
+        ]
+      },
+      {
+        "id": "SPB-0003",
+        "statement": "Provide five default Style Packs: cinematic, analog film, anime, product, portrait. Each pack SHALL include name, one-sentence description (<=25 words), tokens array, optional subcomponent metadata, and explicit model-sensitive markers if applicable.",
+        "rationale": "Ship validated, testable default packs.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1003",
+            "given": "Request default pack definitions for analog film and anime",
+            "when": "System returns default packs",
+            "then": "Pass criteria: packs include expected tokens (e.g., 'film grain' in analog film); pack descriptions are <=25 words; model-sensitive markers present where required; SDXL export includes explicit model-sensitive marker if applicable."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0002"
+        ]
+      },
+      {
+        "id": "SPB-0004",
+        "statement": "Allow pack-level toggles for each pack. When multiple packs are enabled, merge tokens deterministically as: (1) base_prompt tokens first, (2) enabled default packs in fixed order [cinematic, analog film, anime, product, portrait], (3) enabled user-defined packs in registration order. Perform exact-string deduplication and preserve first-occurrence precedence.",
+        "rationale": "Deterministic concatenation ensures reproducible prompts and simplifies testing.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1004",
+            "given": "Image with selected_packs=['portrait','cinematic','analog film'] and all three enabled",
+            "when": "System merges base_prompt with enabled packs",
+            "then": "Pass criteria: merged prompt preserves base_prompt tokens first; default-pack tokens appear in fixed order after base_prompt; exact-string duplicates removed (each token appears only once); merged prompt contains 'film grain' exactly once; A1111 export includes the merged prompt and expected --neg clause."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0002",
+          "SPB-0003"
+        ]
+      },
+      {
+        "id": "SPB-0005",
+        "statement": "Produce three variants for each output: Safe, Bold, and Experimental. Each variant SHALL include a one-sentence descriptor (<=25 words), cfg_range [min,max], cfg_default within range, steps_range [min,max], steps_default within range, and ordered sampler suggestions.",
+        "rationale": "Provide ready-to-use variants with deterministic parameter guidance.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1005",
+            "given": "Request Safe variant for image with 'product' pack enabled",
+            "when": "System returns Safe variant parameters and prompts",
+            "then": "Pass criteria: cfg_default within declared cfg_range and equals expected default (e.g., 6); steps_default within declared range; samplers list non-empty; negative_prompt contains 'watermark' and contains no banned terms."
+          },
+          {
+            "id": "SPB-1006",
+            "given": "Request Experimental variant for image with 'cinematic' and 'anime' packs enabled",
+            "when": "System returns Experimental variant",
+            "then": "Pass criteria: cfg_default and steps_default within declared wider ranges; sampler list contains at least one advanced sampler; variant descriptor includes exact substring 'Experimental' or 'Warning: Experimental'."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0002",
+          "SPB-0003"
+        ]
+      },
+      {
+        "id": "SPB-0006",
+        "statement": "Export platform-ready strings for A1111, SDXL, and ComfyUI for any generated variant. Exports MUST include prompt text and platform-specific parameter annotations (A1111: '--neg' and '--cfg/--steps/--sampler'; SDXL: 'PROMPT:'/'NEG:' plus params JSON-like suffix and model-sensitive markers; ComfyUI: JSON-like snippet with keys 'prompt','negative','params').",
+        "rationale": "Provide predictable, copy-paste-ready exports for common tooling.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1007",
+            "given": "Generate exports for A1111/SDXL/ComfyUI for a Bold variant with 'portrait' pack enabled",
+            "when": "System returns export strings",
+            "then": "Pass criteria: A1111 export contains '--neg' and numeric '--cfg'/'--steps' within declared ranges; SDXL export contains 'PROMPT:' and 'NEG:' and explicit model-sensitive marker '[SDXL_ONLY]' when applicable; ComfyUI export contains '\"prompt\"' and '\"params\"' keys."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0002",
+          "SPB-0005"
+        ]
+      },
+      {
+        "id": "SPB-0007",
+        "statement": "Enforce safety-by-default: the Safe variant MUST remove or neutralize sexual, violent, illegal, or otherwise disallowed content. All variants SHALL be scanned for disallowed terms; the system MUST refuse to include disallowed content and MUST log removal actions to output metadata.removed_tokens.",
+        "rationale": "Align with policy and ensure safety-by-default.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1008",
+            "given": "Image with user_override additional_tokens containing 'some-risky-token' and variant='Safe'",
+            "when": "System generates Safe variant",
+            "then": "Pass criteria: base_prompt does not contain blocked terms; metadata.removed_tokens includes 'some-risky-token'; exports do not include disallowed content."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0002",
+          "SPB-0005"
+        ]
+      },
+      {
+        "id": "SPB-0008",
+        "statement": "When merging negative prompts from multiple enabled packs, the system SHALL: (1) start from base negative_prompt, (2) append unique pack negative tokens in alphabetical order of pack names, (3) perform exact-string deduplication, and (4) document policy in metadata.negative_merge_policy == 'base_then_alphabetical_pack_append_dedup'.",
+        "rationale": "Consistent negative merge strategy supports automated testing.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1009",
+            "given": "Image with selected_packs=['product','portrait'] and both enabled",
+            "when": "System merges negative prompts",
+            "then": "Pass criteria: appended negative tokens follow alphabetical order by pack name; no duplicated negative tokens; metadata.negative_merge_policy == 'base_then_alphabetical_pack_append_dedup'."
+          }
+        ],
+        "priority": "SHOULD",
+        "dependencies": [
+          "SPB-0002",
+          "SPB-0004"
+        ]
+      },
+      {
+        "id": "SPB-0009",
+        "statement": "Warn when prompts exceed recommended length: if base_prompt tokens > 300 tokens or base_prompt length > 2000 characters, system SHALL not block generation but SHALL set metadata.long_prompt == true and include warning text 'base_prompt exceeds recommended length'.",
+        "rationale": "Warn users about potential tokenization/performance issues without blocking.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1010",
+            "given": "Image with all default packs enabled producing very long merged prompt",
+            "when": "System generates prompts",
+            "then": "Pass criteria: generation proceeds; response.metadata.long_prompt == true when base_prompt length > 2000 chars or token_count > 300; metadata.warnings contains exact substring 'base_prompt exceeds recommended length'."
+          }
+        ],
+        "priority": "COULD",
+        "dependencies": [
+          "SPB-0002",
+          "SPB-0004"
+        ]
+      },
+      {
+        "id": "SPB-0010",
+        "statement": "Allow users to create and register additional user-defined packs that conform to the pack schema. User packs SHALL be validated syntactically and for safety; packs with disallowed content SHALL be rejected or sanitized.",
+        "rationale": "Extendability while preserving safety and schema consistency.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1011",
+            "given": "User submits pack definition 'user_vintage' with description and tokens",
+            "when": "System validates and registers user pack",
+            "then": "Pass criteria: pack registered and appears in registry; description <=25 words; tokens array non-empty; pack rejected or sanitized if tokens include banned phrases; when enabled, tokens appear in base_prompt."
+          }
+        ],
+        "priority": "SHOULD",
+        "dependencies": [
+          "SPB-0003",
+          "SPB-0007"
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "id": "RISK-001",
+        "description": "User-defined packs may attempt to inject disallowed or malicious tokens. If validation is incomplete, outputs may contain prohibited content.",
+        "mitigation": "Run strict schema validation, sanitize tokens, scan user-defined packs with the same safety scanner, reject or sanitize packs with disallowed content, and log rejections."
+      },
+      {
+        "id": "RISK-002",
+        "description": "Model-sensitive tokens could be applied to incompatible backends causing instability.",
+        "mitigation": "Mark model-sensitive tokens in pack metadata, annotate SDXL exports explicitly, and prevent automatic inclusion of model-sensitive tokens for incompatible platforms."
+      },
+      {
+        "id": "RISK-003",
+        "description": "Merging many packs can create excessively long prompts that degrade performance or cause tokenization issues.",
+        "mitigation": "Warn on long prompts, offer a 'compact' merge option, and include length heuristics and token-count checks in testing."
+      }
+    ],
+    "open_questions": [
+      "Should SDXL export use single-line JSON suffix or comment-style annotation by default?",
+      "Is an approval workflow required for user-defined packs in multi-tenant environments?",
+      "Is automated scene/feature extraction required in future versions and what confidence thresholds apply?",
+      "Should per-pack subcomponent toggles be included in MVP or deferred?",
+      "Define exact model-sensitive token marker syntax (recommended '[SDXL_ONLY]')."
+    ]
+  }
+}
