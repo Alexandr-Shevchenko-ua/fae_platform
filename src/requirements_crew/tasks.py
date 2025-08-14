@@ -3,7 +3,6 @@ from crewai import Task
 from textwrap import dedent
 from .models import PolicyClarifications, DraftOutput, ValidationResult
 
-
 def build_policy_task(agent, spec: str) -> Task:
     """Create a task that elicits a PolicyClarifications.
 
@@ -25,13 +24,17 @@ def build_policy_task(agent, spec: str) -> Task:
         output_pydantic=PolicyClarifications,
     )
 
-def build_draft_task(agent, spec: str) -> Task:
+def build_draft_task(agent, spec: str, policy_json: dict, clarifications_json: list) -> Task:
     return Task(
         description=dedent(f"""
             Use the approved policy and clarifications to write a requirements document for the spec:
             ---
             {spec}
             ---
+            POLICY:
+            {policy_json}
+            CLARIFICATIONS:
+            {clarifications_json}
             Requirements MUST be unambiguous, imperative, and testable with GIVEN-WHEN-THEN tests.
             Output MUST be a valid DraftOutput JSON (requirements + analysis_report_md).
         """).strip(),
@@ -41,10 +44,14 @@ def build_draft_task(agent, spec: str) -> Task:
         depends_on=[],
     )
 
-def build_validate_task(agent) -> Task:
+def build_validate_task(agent, policy_json: dict, requirements_json: dict) -> Task:
     return Task(
         description=dedent(f"""
             Validate the provided requirements against the policy.
+            POLICY:
+            {policy_json}
+            REQUIREMENTS:
+            {requirements_json}
             Severity: low|medium|high. WARN-ONLY: never block.
 
             IMPORTANT OUTPUT RULES:

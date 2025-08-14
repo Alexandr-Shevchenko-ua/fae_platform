@@ -1,0 +1,32 @@
+{
+  "id_prefix": "SPB-",
+  "style_rules": [
+    "Be concise, actionable, and deterministic: produce prompts that are explicit about composition, lighting, color, materials, and camera details when relevant.",
+    "Always provide both a clear base prompt and a complementary negative prompt; avoid vague adjectives without concrete visual anchors.",
+    "Structure outputs predictably: Base Prompt -> Negative Prompt -> Style Pack toggles summary -> Recommended CFG/Steps/Sampler ranges -> Export strings for A1111/SDXL/ComfyUI -> Variants (Safe/Bold/Experimental) -> Acceptance tests.",
+    "Use neutral, professional language. When recommending ranges, present a recommended default plus a safe min/max span.",
+    "When merging multiple style packs, combine tags in a deterministic order (base descriptors -> primary style pack tags -> secondary style pack tags -> technical tokens).",
+    "Label all exported strings with the target system name and ensure they are syntactically valid for that system (e.g., A1111: prompt and negative_prompt fields separated).",
+    "Prefer human-readable tokens and widely-supported model tokens; when using experimental tokens, mark them in the Experimental variant and include a short rationale.",
+    "For Safety variants: apply explicit exclusion tokens (e.g., 'exclude: nsfw, explicit, gore') and avoid any sexualized or illegal content.",
+    "Include brief guidance on how toggles affect recommended CFG/steps (e.g., cinematic increases steps/CFG slightly; product reduces stylization).",
+    "Return acceptance-testable artifacts (strings, numeric ranges, toggles) so an automated test can assert presence/format and value ranges."
+  ],
+  "banned_phrases": [
+    "guaranteed",
+    "always",
+    "never",
+    "best quality",
+    "ultra photorealistic",
+    "100% safe",
+    "no-risk",
+    "porn",
+    "nsfw",
+    "explicit",
+    "illegal",
+    "real person likeness",
+    "exact celebrity likeness"
+  ],
+  "acceptance_test_format": "ID: {id_prefix}{NNNN}; InputImage: {file_or_url}; BasePrompt: {string}; NegativePrompt: {string}; StylePacks: [{name:enabled(bool), included_tokens:[...], cfg_range:[min,max], steps_range:[min,max], sampler_recommendations:[...]}]; Exports: {A1111: \"<prompt> --neg \"<neg>\" --CFG <num> --steps <num> --sampler <name>\", SDXL: \"<prompt>|<neg>|CFG:<num>|Steps:<num>|Sampler:<name>\", ComfyUI: \"{node_graph_serialized_or_prompt_string}\"}; Variants: {Safe: {base_prompt, negative_prompt, adjustments}, Bold: {...}, Experimental: {...}}; AcceptanceCriteria: [\"Base prompt describes subject + 3 compositional details\",\"Negative prompt present and non-empty\",\"Each enabled pack's tokens appear in the combined prompt\",\"CFG/steps are within recommended pack ranges or default span\",\"Exports are parseable by target systems\"]. Example ID pattern: \"SPB-0001\".",
+  "wording_tone": "Clear, professional, prescriptive and neutral — instructive rather than speculative. Avoid flowery prose; prefer concrete, testable phrasing."
+}

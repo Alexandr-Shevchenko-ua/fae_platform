@@ -1,0 +1,422 @@
+{
+  "findings": [
+    {
+      "severity": "high",
+      "message": "Requirement SPB-0004 uses the banned word 'Always' in its statement ('Always generate a complementary Negative Prompt'), which conflicts with the policy 'banned_phrases'.",
+      "location": "functional_requirements[SPB-0004].statement",
+      "suggestion": "Remove or rephrase 'Always' to an imperative that avoids banned phrases, e.g., 'Generate a complementary Negative Prompt...' and add an explicit clause enforcing prohibition of banned_phrases in both Base and Negative prompts."
+    },
+    {
+      "severity": "medium",
+      "message": "Several acceptance test IDs do not conform to the policy acceptance_test_format ID pattern (ID: {id_prefix}{NNNN}); some IDs use five digits (e.g., 'SPB-10001', 'SPB-11001').",
+      "location": "functional_requirements[*].acceptance_tests[].id (examples: SPB-10001, SPB-11001)",
+      "suggestion": "Renumber acceptance test IDs to the four-digit suffix format (e.g., SPB-1010, SPB-1110) ensuring uniqueness and consistency with the acceptance_test_format."
+    },
+    {
+      "severity": "medium",
+      "message": "Sampler naming is inconsistent across Style Packs (e.g., 'DPM++ 2M Karras' vs 'DPM++ 2M'). This ambiguity hinders automated parsing and downstream compatibility checks.",
+      "location": "functional_requirements[SPB-0006].canonical pack definitions",
+      "suggestion": "Canonicalize sampler names (use a single canonical token, e.g., 'DPM++ 2M Karras') and add a sampler-synonym mapping table to the context or pack metadata to support environment differences."
+    },
+    {
+      "severity": "medium",
+      "message": "Several requirement statements and guidance use vague or unverifiable language (e.g., 'supply guidance: Cinematic increases recommended CFG/Steps slightly' in SPB-0006) which is insufficiently concrete for automated tests.",
+      "location": "functional_requirements[SPB-0006].statement and context guidance",
+      "suggestion": "Replace vague modifiers with explicit numeric adjustments (e.g., 'Cinematic: +1 CFG, +10% Steps') and ensure those adjustments are reflected in acceptance tests and UI guidance requirements (SPB-0010)."
+    },
+    {
+      "severity": "medium",
+      "message": "Potentially conflicting safety/unwanted-generation behavior: SPB-0002 example outputs mention 'young woman' in examples. Without explicit sanitization rules, image analysis that returns descriptors implying a real person may risk producing 'real person likeness' prompts, which the policy bans.",
+      "location": "functional_requirements[SPB-0002].statement and examples",
+      "suggestion": "Explicitly require that subject descriptors from image analysis avoid or neutralize any exact real-person identifiers. Add acceptance tests that verify sanitization: when analysis suggests a possible real-person or celebrity, the system replaces or neutralizes exact-person tokens and surfaces a flag to the user."
+    },
+    {
+      "severity": "low",
+      "message": "Some requirement statements use passive voice, e.g., 'Token sets and numeric recommendations must be returned in responses so automated tests can assert presence.' Passive phrasing can obscure the responsible actor for testability.",
+      "location": "functional_requirements[SPB-0006].statement and similar clauses",
+      "suggestion": "Rewrite to active voice and identify the actor (e.g., 'The system returns token sets and numeric recommendations in the API response...')."
+    },
+    {
+      "severity": "low",
+      "message": "SPB-0007 references an 'overrides: true' flag for tokens but the canonical pack metadata in SPB-0006 does not include an 'overrides' field or example for how to mark tokens as overrides.",
+      "location": "functional_requirements[SPB-0007].statement",
+      "suggestion": "Add an explicit 'overrides' boolean field in each Style Pack token metadata and include an acceptance test verifying override behavior and traceability of which pack's token is active."
+    },
+    {
+      "severity": "low",
+      "message": "SPB-0011 requires emission of at least 9 acceptance-test artifacts in the policy acceptance_test_format. The existing requirement text is clear but the acceptance_tests in other requirements contain some nonconforming IDs as noted above.",
+      "location": "functional_requirements[SPB-0011].statement",
+      "suggestion": "Ensure the emitted test artifacts use the accepted ID format, include InputImage examples (file or URL), and that the exported strings match the target syntaxes precisely; consider including automated JSON schema examples for easier machine validation."
+    },
+    {
+      "severity": "low",
+      "message": "Some acceptance tests rely on language that may be ambiguous to automated checkers (e.g., 'contains at least three distinct composition/technical tokens' without defining token separation rules).",
+      "location": "functional_requirements[SPB-0003].acceptance_tests[SPB-3001]",
+      "suggestion": "Specify the tokenization rule for evaluation (e.g., comma-separated tokens, or token substring matching) so automated tests can assert presence unambiguously."
+    }
+  ],
+  "repaired_requirements": {
+    "meta": {
+      "id_prefix": "SPB-",
+      "version": "1.0",
+      "author": "Requirements Drafter (repaired)",
+      "date": "2025-08-13",
+      "format": "DraftOutput JSON (requirements + analysis_report_md)"
+    },
+    "context": {
+      "business_goal": "Provide a Smart Prompt Booster that converts a user-selected image into a high-quality generative-model prompt (base + negative), supports additive Style Packs, recommends CFG/steps/samplers, exports syntactically valid strings for A1111/SDXL/ComfyUI, and produces Safe, Bold, and Experimental variants for downstream image generation workflows.",
+      "stakeholders": [
+        "Product Manager",
+        "ML/Model Engineers",
+        "Frontend Engineers (UI/UX)",
+        "Backend Engineers",
+        "Quality Assurance",
+        "Legal/Compliance",
+        "End Users (artists, hobbyists, developers)"
+      ],
+      "assumptions": [
+        "Input images are provided as file uploads, URLs, or base64 encodings.",
+        "System has access to basic image-analysis tooling to extract subject, color palette, and composition cues; if unavailable, user-supplied text will be used.",
+        "Exports target common syntaxes: A1111 single-line or separated prompt/negative fields, SDXL pipe-delimited string, ComfyUI prompt block and minimal serialized JSON snippet.",
+        "Prompts are English by default; additional locales optional on request.",
+        "The system enforces banned-phrase constraints and anti-celebrity rules described in clarifications; when analysis suggests a real-person likeness or celebrity, the system neutralizes or flags the descriptor and prevents producing exact real-person/celebrity tokens in outputs."
+      ],
+      "out_of_scope": [
+        "Full multilingual generation by default (only English unless explicitly requested).",
+        "Automatic de-duplication of user-supplied copyrighted or celebrity likeness requests beyond flagging and sanitization.",
+        "Model fine-tuning or training features."
+      ],
+      "non_functional": {
+        "performance": "Prompt generation (including optional image analysis) must complete within 3 seconds for typical images on a production server; exports generated in <1s after prompt composition.",
+        "security": "Validate and sanitize uploaded files and URLs; strip or refuse requests attempting explicit real-person or celebrity likeness generation. Protect stored images and prompts per platform policy.",
+        "reliability": "Generate consistent prompts for identical inputs (deterministic merging and token ordering). Log deterministic seeds used for composition if randomization is applied.",
+        "usability": "UI must show editable Base Prompt and Negative Prompt, toggleable Style Packs, and clearly labeled export buttons for A1111/SDXL/ComfyUI with copy-to-clipboard.",
+        "compliance": "Avoid banned phrases; include Safe variant exclusions; flag and refuse explicit/illegal content requests per policy."
+      }
+    },
+    "functional_requirements": [
+      {
+        "id": "SPB-0001",
+        "statement": "Accept an input image via file upload, URL, or base64; validate format (JPEG, PNG, WebP) and return HTTP 400 for unsupported formats or corrupted files with an error code and message.",
+        "rationale": "Provide flexible image ingestion and upfront validation to ensure downstream prompt generation is based on valid input.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1001",
+            "given": "A valid JPEG image file uploaded.",
+            "when": "The user submits the upload to the Smart Prompt Booster.",
+            "then": "The system accepts the image and returns a success response including an image reference id and an image-metadata object."
+          },
+          {
+            "id": "SPB-1002",
+            "given": "A file with unsupported extension .txt is uploaded.",
+            "when": "The upload is submitted.",
+            "then": "The system rejects the upload with HTTP 400 and an error message 'unsupported image format'."
+          },
+          {
+            "id": "SPB-1003",
+            "given": "A valid image URL is provided.",
+            "when": "The system fetches the URL.",
+            "then": "The system downloads and validates the image; on success it returns an image reference id; on fetch error returns an appropriate 4xx/5xx error and logs reason."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": []
+      },
+      {
+        "id": "SPB-0002",
+        "statement": "Attempt automated image analysis to extract subject descriptors, dominant color palette, and composition cues (e.g., 'subject: person; composition: close-up head-and-shoulders; dominant_colors: warm orange, teal'); if analysis fails or confidence is low, surface an editable 'image description' text field prefilled with 'image analysis unavailable'. The system must neutralize or avoid producing exact real-person or celebrity identifiers; when uncertain, use neutral descriptors (e.g., 'person', 'adult', 'child') and surface a warning to the user.",
+        "rationale": "Seeding base prompts with concrete, testable visual anchors improves prompt quality while allowing user correction, while preventing generation of exact real-person/celebrity likenesses.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-2001",
+            "given": "An image of a single person in head-and-shoulders framing.",
+            "when": "Image analysis runs.",
+            "then": "The system returns a subject token (contains 'person' or a neutral gendered token like 'man'/'woman' only when confidence is high and not identifying a real person), a composition token (contains 'head' or 'shoulders' or 'close-up'), and at least one dominant color token."
+          },
+          {
+            "id": "SPB-2002",
+            "given": "A corrupted image or analysis service outage.",
+            "when": "Analysis is attempted.",
+            "then": "The system populates the editable description field with 'image analysis unavailable' and allows prompt generation to proceed using user-supplied description or defaults."
+          },
+          {
+            "id": "SPB-2003",
+            "given": "An analysis result that suggests a likely celebrity or identifiable real person.",
+            "when": "The system constructs prompts.",
+            "then": "The system replaces explicit person-name tokens with neutral descriptors and flags the record; the user must explicitly confirm or provide a sanitized description before the system includes any potentially identifying descriptors in the output."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0001"
+        ]
+      },
+      {
+        "id": "SPB-0003",
+        "statement": "Generate a Base Prompt that describes the primary subject and at least three explicit compositional/technical details (lighting, camera lens or focal length, color mood, materials, or equivalent). Base Prompts must be explicit about composition, lighting, color, materials, and camera details when relevant.",
+        "rationale": "Ensure base prompts are actionable and deterministic for image generation.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-3001",
+            "given": "An image and/or analysis that identifies a subject and composition cues.",
+            "when": "The system generates the Base Prompt without any style pack enabled.",
+            "then": "The Base Prompt string must contain the subject and at least three distinct composition/technical tokens (e.g., 'soft rim light', '35mm', 'warm golden hour', 'shallow depth of field'). Token presence is asserted by comma-separated token matching."
+          },
+          {
+            "id": "SPB-3002",
+            "given": "No image analysis available and user provides a short description.",
+            "when": "User triggers prompt generation.",
+            "then": "The Base Prompt is constructed using the user description and includes three compositional details derived from defaults (lighting, camera, color)."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0001",
+          "SPB-0002"
+        ]
+      },
+      {
+        "id": "SPB-0004",
+        "statement": "Generate a complementary Negative Prompt: it must be non-empty, comma-separated, under 2000 characters, include at least three common negative tokens (e.g., 'lowres', 'bad anatomy', 'watermark'), and must not include any banned phrases or exact real-person/celebrity tokens. The system must explicitly include 'exclude: real person likeness, celebrity' in the Safe variant negative prompt.",
+        "rationale": "Explicit negative prompts reduce undesired artifacts and enforce safety constraints.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-4001",
+            "given": "A generated Negative Prompt.",
+            "when": "The prompt is produced.",
+            "then": "The Negative Prompt is non-empty, length <= 2000 characters, contains at least three comma-separated tokens, and does not contain banned phrases from policy."
+          },
+          {
+            "id": "SPB-4002",
+            "given": "User input attempts to request a celebrity likeness in the prompt.",
+            "when": "The system constructs the Negative Prompt for the Safe variant or evaluates request.",
+            "then": "The system either refuses the celebrity request (returns sanitization message) or replaces explicit celebrity tokens with neutral descriptors; the Negative Prompt includes 'exclude: real person likeness, celebrity'."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0003"
+        ]
+      },
+      {
+        "id": "SPB-0005",
+        "statement": "Provide five additive Style Packs (Cinematic, Analog Film, Anime, Product, Portrait). Each pack exposes a deterministic set of included tokens, a recommended CFG default and safe [min,max] range, recommended Steps default and [min,max] range, and a small set of recommended samplers. Style Packs are additive by default and combined deterministically in the following order: Cinematic, Analog Film, Anime, Product, Portrait. Provide UI toggles to enable/disable any combination and an optional 'pack priority' control to override default ordering.",
+        "rationale": "Additive packs allow flexible composition while deterministic ordering resolves conflicts reproducibly.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-5001",
+            "given": "The user enables the Cinematic pack only.",
+            "when": "A combined prompt is generated.",
+            "then": "The final prompt contains at least one cinematic token from the Cinematic token set and the resulting CFG and Steps are within Cinematic's recommended [min,max] ranges."
+          },
+          {
+            "id": "SPB-5002",
+            "given": "The user enables Cinematic and Portrait packs.",
+            "when": "A combined prompt is generated with default deterministic order.",
+            "then": "Tokens from Cinematic appear before tokens from Portrait in the combined prompt; where packs provide conflicting explicit overrides (overrides:true), the later pack (Portrait) applies per the override rule; the combined CFG and Steps reflect pack guidance per merging rules and documented numeric merges."
+          },
+          {
+            "id": "SPB-5003",
+            "given": "All five packs enabled.",
+            "when": "The user generates a combined prompt.",
+            "then": "Combined prompt contains tokens from each pack in order Cinematic -> Analog Film -> Anime -> Product -> Portrait; duplicate tokens are de-duplicated preserving earliest occurrence unless overridden; resulting CFG/Steps are within an intersection/combined range or within system default span if no intersection; sampler recommendations list the union of pack recommendations in deterministic order."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0003",
+          "SPB-0004"
+        ]
+      },
+      {
+        "id": "SPB-0006",
+        "statement": "Expose deterministic canonical token sets and numeric recommendations for each Style Pack. Token sets and numeric recommendations must be returned in API responses so automated tests can assert presence. Use the following canonical tokens and ranges (tokens are human-readable) and canonicalized sampler names (use 'DPM++ 2M Karras' consistently):\n- Cinematic.tokens: [\"cinematic lighting\", \"dramatic rim light\", \"shallow depth of field\", \"35mm lens\", \"wide color grade\"]\n- Cinematic.CFG: default 9, range [6,12]\n- Cinematic.Steps: default 40, range [20,60]\n- Cinematic.Samplers: [\"Euler_a\", \"DPM++ 2M Karras\"]\n\n- AnalogFilm.tokens: [\"film grain\", \"Kodak Portra 400\", \"halation\", \"warm tones\", \"50mm lens\"]\n- AnalogFilm.CFG: default 6, range [4,9]\n- AnalogFilm.Steps: default 28, range [18,40]\n- AnalogFilm.Samplers: [\"Euler\", \"LMS\"]\n\n- Anime.tokens: [\"cel shaded\", \"anime style\", \"line art\", \"big expressive eyes\", \"flat vibrant colors\"]\n- Anime.CFG: default 6, range [4,8]\n- Anime.Steps: default 18, range [12,30]\n- Anime.Samplers: [\"DPM++ 2M Karras\", \"Euler\"]\n\n- Product.tokens: [\"studio lighting\", \"white seamless background\", \"high detail\", \"specular highlights\", \"50mm macro\"]\n- Product.CFG: default 10, range [7,13]\n- Product.Steps: default 45, range [30,70]\n- Product.Samplers: [\"DPM++ 2M Karras\"]\n\n- Portrait.tokens: [\"soft lighting\", \"short telephoto\", \"head and shoulders\", \"skin texture detail\", \"bokeh\"]\n- Portrait.CFG: default 8, range [6,11]\n- Portrait.Steps: default 35, range [25,50]\n- Portrait.Samplers: [\"Euler_a\", \"DPM++ 2M Karras\"]\n\nAdditionally, supply explicit numeric guidance for pack effects: Cinematic increases CFG by +1 and Steps by +10%; Product increases CFG by +1 and Steps by +15%; Anime reduces Steps by 20% relative to portrait defaults. Document how these adjustments map to pack-enabled merges and ensure the system reports the numeric computation and contributing packs.",
+        "rationale": "Canonical tokens and numeric ranges enable reproducible prompt composition and automated validation.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-6001",
+            "given": "Request for pack metadata for 'Cinematic'.",
+            "when": "The system returns pack metadata.",
+            "then": "Response contains the Cinematic.tokens array, Cinematic.CFG default and range, Cinematic.Steps default and range, and Cinematic.Samplers list exactly as specified, and sampler names match the canonical sampler tokens."
+          },
+          {
+            "id": "SPB-6002",
+            "given": "A combined prompt request with Cinematic and Product enabled and default pack priority.",
+            "when": "The system computes recommended CFG and Steps.",
+            "then": "The recommended CFG/Steps are computed according to stated guidance (Cinematic +1 CFG/+10% Steps and Product +1 CFG/+15% Steps applied deterministically), the final numeric values fall within the union of each pack's allowed ranges or within the system's default span when union is partial, and the response documents the numeric result and the contributing packs."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0005"
+        ]
+      },
+      {
+        "id": "SPB-0007",
+        "statement": "When multiple packs are enabled, merge tags deterministically in the canonical order (Cinematic -> Analog Film -> Anime -> Product -> Portrait). De-duplicate identical tokens preserving the earliest occurrence. Packs may declare explicit token metadata 'overrides': true; when an override is present, the later pack's token replaces the earlier pack's token per ordering rules unless the user overrides pack priority.",
+        "rationale": "Deterministic merging avoids non-repeatable prompts and supports automated verification.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-7001",
+            "given": "Cinematic and Analog Film both provide a token 'warm tones' (simulated conflict).",
+            "when": "Both packs are enabled in default ordering.",
+            "then": "The combined prompt contains 'warm tones' only once in the position determined by the pack order (Cinematic before Analog Film); de-duplication is verifiable by token index positions."
+          },
+          {
+            "id": "SPB-7002",
+            "given": "Product pack sets an explicit override token for 'white seamless background' marked overrides:true and Portrait pack also supplies 'white seamless background' later in order.",
+            "when": "Both packs enabled with default ordering.",
+            "then": "The later pack's override token from Portrait replaces Product's token in the final combined prompt; the output documents which pack provided the active token and includes a merge trace in metadata."
+          },
+          {
+            "id": "SPB-7003",
+            "given": "User changes pack priority to prioritize Product over Cinematic.",
+            "when": "Combined prompt is generated.",
+            "then": "Token ordering follows the user-specified pack priority and the merge trace documents the applied order and any overrides."
+          }
+        ],
+        "priority": "SHOULD",
+        "dependencies": [
+          "SPB-0005",
+          "SPB-0006"
+        ]
+      },
+      {
+        "id": "SPB-0008",
+        "statement": "Export syntactically valid prompt strings for three targets: A1111, SDXL, and ComfyUI. Label each export with its target name. Export formats must be:\n- A1111: single-line string of form: \"<prompt> --neg \\\"<negative_prompt>\\\" --CFG <num> --steps <num> --sampler <name>\"\n- SDXL: pipe-delimited string: \"<prompt> | <negative_prompt> | CFG:<num> | Steps:<num> | Sampler:<name>\"\n- ComfyUI: include a human-readable prompt block and a minimal serialized JSON snippet: {\"prompt\": \"<prompt>\", \"negative_prompt\":\"<neg>\", \"cfg\":<num>, \"steps\":<num>, \"sampler\":\"<name>\"}\nEnsure exported strings do not contain banned phrases and annotate default/allowed min/max for CFG/Steps in metadata accompanying the exports. Include canonical sampler tokens and allow sampler synonyms via mapping metadata.",
+        "rationale": "Provide immediately usable exports for common generation pipelines and enable automated parsing tests.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-8001",
+            "given": "A generated Base Prompt and Negative Prompt and numeric CFG/Steps/sampler selected.",
+            "when": "The user selects 'Export A1111'.",
+            "then": "The exported string matches regex: ^.+ --neg \\\".+\\\" --CFG \\d+(\\.\\d+)? --steps \\d+ --sampler \\S+$ and contains the Base Prompt and Negative Prompt substrings; CFG and steps numeric values are present and within permitted ranges for enabled packs; sampler token matches canonical sampler tokens or is mapped via synonyms."
+          },
+          {
+            "id": "SPB-8002",
+            "given": "Same inputs as above.",
+            "when": "The user selects 'Export SDXL'.",
+            "then": "The exported SDXL string matches pattern: '<prompt> | <neg> | CFG:<num> | Steps:<num> | Sampler:<name>' and is parseable by splitting on '|' and trimming; the numeric fields parse to integers or floats and fall within allowed ranges."
+          },
+          {
+            "id": "SPB-8003",
+            "given": "Same inputs as above.",
+            "when": "The user selects 'Export ComfyUI'.",
+            "then": "The ComfyUI export includes the human-readable prompt block and a valid JSON object string containing keys prompt, negative_prompt, cfg, steps, sampler; JSON parses without error."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0003",
+          "SPB-0004",
+          "SPB-0006"
+        ]
+      },
+      {
+        "id": "SPB-0009",
+        "statement": "Produce three labeled variants for each generated prompt set: Safe, Bold, and Experimental. Each variant must include Base Prompt, Negative Prompt, and documented adjustments. Rules:\n- Safe: apply explicit exclusion tokens 'exclude: sexual, violent, illegal, real person likeness, celebrity'; use conservative tokens and reduce stylistic risk; ensure Negative Prompt contains safe exclusions; do not include sexualized or illegal content.\n- Bold: allow increased stylization (add strong stylistic tokens), permit mature thematic but non-explicit descriptors, and suggest increased CFG/Steps within enabled pack ranges (e.g., +10-20% Steps, +1-2 CFG while respecting pack maximums).\n- Experimental: may include experimental or model-specific tokens; every experimental token must be flagged with rationale in the variant metadata; the variant must be clearly labeled 'Experimental' and include an 'experimental_tokens' array and 'rationale' string.\nEnsure Safe forbids exact real-person or celebrity mentions and adds explicit negative exclusions. Record variant-level metadata and numeric adjustments explicitly in output.",
+        "rationale": "Provide variants for different user risk appetites and testing needs while enforcing safety and traceability for experimental tokens.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-9001",
+            "given": "A generated prompt set and the Safe variant selection.",
+            "when": "Safe variant is produced.",
+            "then": "The Safe Base Prompt avoids sexual/illegal content; the Negative Prompt includes 'exclude: sexual, violent, illegal, real person likeness, celebrity'; none of the Base/Negative prompts contain banned phrases."
+          },
+          {
+            "id": "SPB-9002",
+            "given": "A generated prompt set and Bold variant selection.",
+            "when": "Bold variant is produced.",
+            "then": "Bold variant includes at least one additional strong stylistic token compared to Base; suggested CFG/Steps are increased relative to Base but still within pack allowed ranges or documented tolerances; response documents numeric adjustments and shows calculations."
+          },
+          {
+            "id": "SPB-9003",
+            "given": "A generated prompt set and Experimental variant selection.",
+            "when": "Experimental variant is produced.",
+            "then": "Experimental output contains an 'experimental_tokens' array listing any nonstandard tokens used, each with a short 'rationale' string; exports clearly label variant as Experimental; the acceptance test verifies presence of experimental_tokens and rationale text."
+          }
+        ],
+        "priority": "MUST",
+        "dependencies": [
+          "SPB-0003",
+          "SPB-0004",
+          "SPB-0006",
+          "SPB-0008"
+        ]
+      },
+      {
+        "id": "SPB-0010",
+        "statement": "Provide UI guidance indicating how enabling/disabling packs affects recommended CFG and Steps: e.g., 'Cinematic increases CFG by +1 and Steps by +10% recommended; Product increases CFG by +1 and Steps by +15%; Anime reduces Steps by -20% relative to portrait defaults.' The system must adjust suggested CFG/Steps accordingly and show min/max bounds. Allow user override with a clear warning when values are outside combined allowed ranges.",
+        "rationale": "Users must understand numeric tradeoffs when toggling packs and be able to override defaults with warnings when outside recommended ranges.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1010",
+            "given": "User toggles Cinematic on.",
+            "when": "Prompt suggestions update.",
+            "then": "UI displays a visible change to suggested CFG (increase by +1 from baseline if applicable) and suggested Steps (increase by approximately 10%); min/max bounds remain visible."
+          },
+          {
+            "id": "SPB-1011",
+            "given": "User selects a CFG value outside the documented combined allowed range and confirms.",
+            "when": "User attempts to export the prompt.",
+            "then": "System allows override but surfaces a warning message indicating the value is outside recommended ranges and noting possible image quality tradeoffs."
+          }
+        ],
+        "priority": "SHOULD",
+        "dependencies": [
+          "SPB-0006"
+        ]
+      },
+      {
+        "id": "SPB-0011",
+        "statement": "Produce at least the following system-level automated acceptance tests (returned as structured artifacts) for any generated prompt output: baseline (no packs), one per style pack (Cinematic, Analog Film, Anime, Product, Portrait), and three variant-edge tests (Safe, Bold, Experimental). Each test artifact must be in the policy acceptance_test_format using the id_prefix and include: InputImage (file or URL), BasePrompt, NegativePrompt, StylePacks array with enabled booleans and numeric ranges, Exports for A1111/SDXL/ComfyUI, and Variants block. Provide at least 9 distinct test artifacts in the response when user requests tests.",
+        "rationale": "Support QA automation by emitting explicitly structured test artifacts that assert presence, format, and numeric ranges.",
+        "acceptance_tests": [
+          {
+            "id": "SPB-1110",
+            "given": "System requested to emit acceptance tests for generated prompt outputs.",
+            "when": "System generates tests.",
+            "then": "System outputs at least 9 test artifacts in the policy acceptance_test_format using the SPB- prefix and four-digit suffix IDs; each artifact includes the fields specified and is parseable as JSON or plain text per format rules."
+          }
+        ],
+        "priority": "SHOULD",
+        "dependencies": [
+          "SPB-0003",
+          "SPB-0004",
+          "SPB-0006",
+          "SPB-0008",
+          "SPB-0009"
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "id": "R-001",
+        "description": "Image analysis may misidentify subjects or colors leading to incorrect base prompts.",
+        "mitigation": "Allow user-editable Base Prompt and show extracted tags for manual correction; log confidence scores and fall back to user description if confidence is low."
+      },
+      {
+        "id": "R-002",
+        "description": "Export strings may not be compatible with all downstream model versions or samplers may be unsupported by user's environment.",
+        "mitigation": "Document supported sampler names, provide a mapping table for common synonyms, and include sampler as free-text override in exports with a warning if unsupported."
+      },
+      {
+        "id": "R-003",
+        "description": "Potential for generating disallowed content or requested celebrity likenesses.",
+        "mitigation": "Enforce refusal/sanitization for celebrity/exact-real-person requests; Safe variant adds explicit exclusions; log and surface compliance messages; require explicit user confirmation for any sanitized descriptor override."
+      },
+      {
+        "id": "R-004",
+        "description": "Deterministic merging and de-duplication complexity when packs have overlapping tokens or explicit overrides.",
+        "mitigation": "Implement canonical pack order and explicit override flags; include merge trace in outputs to aid debugging; provide unit tests for merge and override logic."
+      }
+    ],
+    "open_questions": [
+      "Confirm the maximum acceptable latency for prompt generation under peak load beyond the 3s assumption.",
+      "Decide whether to persist user-custom pack priority presets server-side or only client-side.",
+      "Confirm the precise list of supported sampler string variants to include in sampler synonym mapping.",
+      "Clarify whether ComfyUI serialized node-graph must be full valid node graph JSON or a minimal JSON snippet is sufficient (current requirement uses minimal JSON snippet).",
+      "Determine retention policy for uploaded images and generated prompts (privacy/compliance)."
+    ]
+  }
+}

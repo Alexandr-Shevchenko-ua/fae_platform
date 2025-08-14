@@ -8,5 +8,4 @@ def make_llm():
     """
     model = os.getenv("OPENAI_MODEL_NAME", "gpt-5-mini-2025-08-07")
     temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.2"))
-    # You can also set timeout or max_retries here if desired.
     return ChatOpenAI(model=model, temperature=temperature)

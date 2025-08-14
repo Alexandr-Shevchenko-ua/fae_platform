@@ -1,0 +1,47 @@
+[
+  {
+    "question": "Should style packs be mutually exclusive or additive (i.e., can users enable multiple packs and how should conflicts be resolved)?",
+    "proposed_answer": "Make style packs additive by default: users can toggle any combination. When multiple packs provide conflicting tokens, resolve deterministically by order: Cinematic, Analog Film, Anime, Product, Portrait (later packs append/override where explicitly flagged). Provide an option to prefer 'pack priority' to let users change tie-breakers.",
+    "confidence": 0.82
+  },
+  {
+    "question": "What exact export formats are required for each target (A1111, SDXL, ComfyUI)? Should these be single-line strings or structured JSON for ComfyUI?",
+    "proposed_answer": "Produce: (1) A1111: single-line plain prompt plus a separate negative prompt field or combined string with a clear separator; include CFG, steps and sampler as annotations. (2) SDXL: use a concise pipe-delimited string: 'prompt | negative | CFG:<n> | Steps:<n> | Sampler:<name>'. (3) ComfyUI: provide both a human-readable prompt block and a minimal serialized JSON/snippet (or pseudo-node graph) that can be pasted into ComfyUI; mark experimental nodes when used.",
+    "confidence": 0.88
+  },
+  {
+    "question": "What are the intended meanings and strictness levels of Safe, Bold and Experimental variants?",
+    "proposed_answer": "Define: Safe = strict exclusion of sexual, violent, illegal and real-person likeness content; use conservative tokens and strong negative prompts. Bold = allow stylistic risk, mature themes non-explicit, stronger stylization tokens, slightly higher CFG/steps. Experimental = may include nonstandard tokens, model-specific hacks, and optional external pipelines; must be labeled clearly and include a rationale for experimental tokens.",
+    "confidence": 0.78
+  },
+  {
+    "question": "What numeric CFG/steps/sampler recommendation policy should be used per style pack (defaults and allowed ranges)?",
+    "proposed_answer": "Provide a recommended default plus safe min and max per pack: Cinematic: CFG 6-12 (default 9), Steps 20-60 (default 40), Samplers recommended: Euler_a, DPM++ 2M Karras. Analog Film: CFG 4-9 (default 6), Steps 18-40 (default 28), Samplers: Euler, LMS. Anime: CFG 4-8 (default 6), Steps 12-30 (default 18), Samplers: DPM++ 2M Karras, Euler. Product: CFG 7-13 (default 10), Steps 30-70 (default 45), Samplers: DPM++ 2M Karras. Portrait: CFG 6-11 (default 8), Steps 25-50 (default 35), Samplers: Euler_a, DPM++ 2M. Exports should annotate default and allowed min/max. Allow system overrides but surface warnings when outside ranges.",
+    "confidence": 0.66
+  },
+  {
+    "question": "What constitutes an acceptable negative prompt? Any hard limits (length, token count)?",
+    "proposed_answer": "Negative prompts must be present and should list undesired elements succinctly (e.g., 'lowres, bad anatomy, watermark, text, blur, nsfw'). Enforce a practical length cap (e.g., 2000 characters) and recommend de-duplicated comma-separated tokens. The automated acceptance test will ensure it's non-empty, under cap, and contains at least 3 common negative tokens.",
+    "confidence": 0.7
+  },
+  {
+    "question": "How will input images be provided (file upload, URL, base64)? Are we required to analyze image contents to seed prompts or only to allow user text selection accompanying the image?",
+    "proposed_answer": "Support file uploads and URLs; accept base64 as an alternate. The system should attempt basic image analysis to extract subject, color palette and composition cues when available (automated tags), but always allow the user to edit/generated base prompt. If no analysis allowed, fall back to user-supplied description.",
+    "confidence": 0.62
+  },
+  {
+    "question": "How many acceptance tests are required per submitted prompt output, and what coverage is expected?",
+    "proposed_answer": "Require at least 6 acceptance tests per feature: one baseline (no packs), one per style pack (5), and three variant-edge tests (Safe, Bold, Experimental). Each test asserts presence/format of base & negative prompts, at least one style token when pack enabled, CFG/steps within ranges, and parseability of export strings. Optionally add image-edge cases (transparent background, low-res) if image analysis is used.",
+    "confidence": 0.58
+  },
+  {
+    "question": "Should the system avoid using or claiming exact real-person or celebrity likenesses, and how strict should anti-celebrity constraints be?",
+    "proposed_answer": "Yes: avoid producing or asserting exact real-person or celebrity likeness tokens. Provide neutral descriptors (e.g., 'young female actor-like features' is acceptable as stylized guidance), and add explicit negative tokens for 'real person likeness' and 'celebrity' in Safe variant. Flag any user prompt that attempts to request exact celebrity likeness and return a refusal or sanitization step.",
+    "confidence": 0.85
+  },
+  {
+    "question": "Is multilingual prompt output required or should prompts be English-only by default?",
+    "proposed_answer": "Default to English for highest consistency and tool compatibility; include an option to generate prompts in other languages on request, ensuring exported strings remain syntactically valid. When non-English requested, include an English equivalent commentary for debugging.",
+    "confidence": 0.72
+  }
+]
